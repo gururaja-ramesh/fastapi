@@ -3,12 +3,18 @@ from curses.ascii import HT
 from pkgutil import ImpImporter
 from this import s
 from typing import Optional
-from fastapi import Body, FastAPI, Response, status, HTTPException
+from fastapi import Body, FastAPI, Response, status, HTTPException, Depends
 from pydantic import BaseModel, HttpUrl
-from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
+from . import models
+from .database import engine, get_db
+from sqlalchemy.orm import Session
+
+# This creates a table in postgres based on the model we defined
+# if the table already exists then it doesn't do anything
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -21,7 +27,7 @@ class Post(BaseModel):
     content: str
     published: bool = True
 
-#connection to database
+# connection to database
 while True:
     try:
         conn = psycopg2.connect(host='localhost', database='fastapi', user='postgres', 
@@ -36,33 +42,37 @@ while True:
 
 
 
-my_posts = [{"title": "title of post 1", "content": "content of post 1", "id" : 1},
-{"title": "favorite food", "content": "I like pizza", "id" : 2}
-]
+# my_posts = [{"title": "title of post 1", "content": "content of post 1", "id" : 1},
+# {"title": "favorite food", "content": "I like pizza", "id" : 2}
+# ]
 
-def find_posts(id):
-    for p in my_posts:
-        if p["id"] == id:
-            return p
+# def find_posts(id):
+#     for p in my_posts:
+#         if p["id"] == id:
+#             return p
 
-def find_index_post(id):
-    for i, p in enumerate(my_posts):
-        if p['id'] == id:
-            return i
+# def find_index_post(id):
+#     for i, p in enumerate(my_posts):
+#         if p['id'] == id:
+#             return i
 
 
 @app.get("/")
 def root():
     return {'message': 'welcome to my api!!!!!'}
 
-#get all posts
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    return {"status" : "success"}
+
+# get all posts
 @app.get("/posts")
 def get_posts():
     cursor.execute("""SELECT * FROM posts""")
     posts = cursor.fetchall()
     return {"data" : posts}
 
-#create a new post
+# create a new post
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
     cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """,
@@ -71,7 +81,7 @@ def create_posts(post: Post):
     conn.commit()
     return {"data" : new_post}
 
-#get one post using id
+# get one post using id
 @app.get("/posts/{id}")
 def get_post(id: int):
     cursor.execute("""SELECT * from posts WHERE id = %s""", (str(id)))
@@ -81,6 +91,7 @@ def get_post(id: int):
                             detail=f"post with id: {id} was not found") 
     return {"post_detail": post}
 
+# Delete a post using the id
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_posts(id: int):
     cursor.execute("""DELETE FROM posts WHERE id = %s RETURNING *""", (str(id)))
@@ -91,6 +102,7 @@ def delete_posts(id: int):
                             detail = f"post with id:{id} does not exist")
     return Response(status_code=status.HTTP_204_NO_CONTENT) #204_no_content coz it is practise to not send any data after a delete request
 
+# Update the contents of a post using id
 @app.put("/posts/{id}")
 def update_post(id: int, post:Post):
     cursor.execute("""UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s 

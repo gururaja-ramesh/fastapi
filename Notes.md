@@ -3,7 +3,7 @@
 
 
 ## Object Relational Mapper(ORM)
-- **Traditional way** : Fastapi can directly talks to DB using SQL
+- **Traditional way** : Fastapi can directly talk to DB using SQL
 - **ORM** : 
     - Fastapi talks to ORM using Python
     - ORM talks to DB using SQL
@@ -13,6 +13,6 @@
 - **Sqlalchemy** is one of the most popular python ORMS. Its a standalone library and it can be used with any python web frameworks or any python based application
 ## SQLAlchemy
 ### Steps
-- Setup the unique URL to connect to the database. Every database has a specific type for it and it just a string
+- Setup the unique URL to connect to the database. Every database has a specific type for it and its just a string
 - Example connection string(URL) for postgres which needs to be passed to sqlalchemy
     - `SQLALCHEMY_DATABASE_URL = 'postgresql://<username>:<password>@<ip-address/hostname>/<database_name>'`

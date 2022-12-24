@@ -3,7 +3,7 @@ from curses.ascii import HT
 from pkgutil import ImpImporter
 from this import s
 from turtle import title
-from typing import Optional
+from typing import Optional, List
 from fastapi import Body, FastAPI, Response, status, HTTPException, Depends
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -56,15 +56,15 @@ def root():
     return {'message': 'welcome to my api!!!!!'}
 
 # get all posts
-@app.get("/posts")
+@app.get("/posts", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     # cursor.execute("""SELECT * FROM posts""")
     # posts = cursor.fetchall()
     posts = db.query(models.Post).all()
-    return {posts}
+    return posts
 
 # create a new post
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
+@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     # cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """,
     # (post.title, post.content, post.published))
@@ -77,11 +77,11 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_post)
 
-    return {new_post}
+    return new_post
 
 # get one post using id
 @app.get("/posts/{id}")
-def get_post(id: int, db: Session = Depends(get_db)):
+def get_post(id: int, db: Session = Depends(get_db), response_model=schemas.Post):
     # cursor.execute("""SELECT * from posts WHERE id = %s""", (str(id)))
     # post = cursor.fetchone()
 
@@ -89,7 +89,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"post with id: {id} was not found") 
-    return {post}
+    return post
 
 # Delete a post using the id
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -108,7 +108,7 @@ def delete_posts(id: int, db: Session = Depends(get_db)):
 
 # Update the contents of a post using id
 @app.put("/posts/{id}")
-def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)):
+def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db), response_model=schemas.Post):
     # cursor.execute("""UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s 
     # RETURNING *""", (post.title, post.content, post.published, str(id)))
     # updated_post = cursor.fetchone()
@@ -120,5 +120,5 @@ def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)
                             detail = f"post with id:{id} does not exist")
     post_query.update(post.dict(), synchronize_session=False)
     db.commit()
-    return {post_query.first()} 
+    return post_query.first()
 

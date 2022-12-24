@@ -1,6 +1,10 @@
 from .database import Base
 from sqlalchemy import TIMESTAMP, Column, Integer, String, Boolean, text
 
+'''
+This model is used for defining the columns in our table in our database.
+This is used to query, create, delete and update entries within our database
+'''
 class Post(Base):
     __tablename__ = "posts"
 

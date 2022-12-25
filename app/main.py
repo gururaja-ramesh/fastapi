@@ -8,10 +8,9 @@ from fastapi import Body, FastAPI, Response, status, HTTPException, Depends
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
-from . import models
+from . import models, schemas, utils
 from .database import engine, get_db
 from sqlalchemy.orm import Session
-from . import schemas
 
 # This creates a table in postgres based on the model we defined
 # if the table already exists then it doesn't do anything
@@ -125,8 +124,13 @@ def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)
 # create a new users
 @app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    
+    #hash the password - user.password
+    hashed_password = utils.hash(user.password)
+    user.password = hashed_password
+
     new_user = models.User(**user.dict()) #unpacks the user info like the above statement
-    db.add(new_user)
+    db.add(new_user) 
     db.commit()
     db.refresh(new_user) # returns the recently created user from DB
 
